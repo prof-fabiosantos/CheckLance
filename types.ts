@@ -6,6 +6,8 @@ export interface AnalysisResult {
   key_factors: string[];
 }
 
+export type InfractionType = 'GENERAL' | 'OFFSIDE' | 'PENALTY' | 'HANDBALL' | 'RED_CARD' | 'GOAL_CHECK';
+
 export interface PaymentState {
   isPaid: boolean;
   amount: number;

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { IconUpload, IconWhistle, IconCreditCard, IconLoader, IconShield, IconLock } from './components/Icons';
+import { IconUpload, IconWhistle, IconCreditCard, IconLoader, IconShield, IconLock, IconRobotEye, IconTacticBoard, IconCheckCircle, IconFlag, IconHand, IconAlertTriangle } from './components/Icons';
 import { analyzeFootballPlay } from './services/geminiService';
-import { AnalysisResult, AppStep } from './types';
+import { AnalysisResult, AppStep, InfractionType } from './types';
 import { AnalysisCard } from './components/AnalysisCard';
 import { CardCheckout } from './components/CardCheckout';
 
@@ -11,7 +11,7 @@ import { Elements } from '@stripe/react-stripe-js';
 
 // Initialize Stripe outside component render
 // NOTE: You must add VITE_STRIPE_PUBLISHABLE_KEY to your .env file
-const stripePromise = loadStripe((import.meta as any).env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder_please_update_env');
+const stripePromise = loadStripe(process.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder_please_update_env');
 
 // Helper to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -74,6 +74,48 @@ const extractFramesFromVideo = async (videoFile: File, numFrames: number = 8): P
   return frames;
 };
 
+// Background Illustration Component
+const TacticalBackground = () => (
+  <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-10">
+    <svg width="100%" height="100%" className="absolute inset-0">
+       <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5"/>
+      </pattern>
+      <rect width="100%" height="100%" fill="url(#grid)" />
+    </svg>
+    
+    {/* Stylized Play - Right Side */}
+    <svg className="absolute top-20 right-0 w-96 h-96 text-field transform translate-x-1/3 rotate-12" viewBox="0 0 200 200">
+      <circle cx="50" cy="50" r="5" fill="currentColor" />
+      <circle cx="80" cy="120" r="5" fill="currentColor" />
+      <text x="140" y="80" fill="currentColor" fontSize="20" fontFamily="monospace">X</text>
+      <text x="100" y="160" fill="currentColor" fontSize="20" fontFamily="monospace">X</text>
+      
+      {/* Dashed Movement Lines */}
+      <path d="M 50 50 Q 90 20 140 80" stroke="currentColor" strokeWidth="2" strokeDasharray="5,5" fill="none" markerEnd="url(#arrow)" />
+      <path d="M 80 120 Q 120 140 100 160" stroke="currentColor" strokeWidth="2" strokeDasharray="5,5" fill="none" markerEnd="url(#arrow)" />
+      
+      {/* Pass */}
+      <path d="M 50 50 L 80 120" stroke="currentColor" strokeWidth="1" strokeDasharray="2,2" fill="none" />
+      
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5"
+          markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
+        </marker>
+      </defs>
+    </svg>
+
+    {/* Stylized Play - Left Side */}
+    <svg className="absolute bottom-0 left-0 w-96 h-96 text-teal-500 transform -translate-x-1/4 -rotate-12 opacity-50" viewBox="0 0 200 200">
+       <circle cx="150" cy="150" r="4" stroke="currentColor" strokeWidth="2" fill="none" />
+       <path d="M 150 150 L 100 100" stroke="currentColor" strokeWidth="2" strokeDasharray="5,5" fill="none" />
+       <rect x="90" y="90" width="10" height="10" stroke="currentColor" fill="none" transform="rotate(45 95 95)" />
+    </svg>
+  </div>
+);
+
 function App() {
   const [step, setStep] = useState<AppStep>(AppStep.LANDING);
   
@@ -82,6 +124,9 @@ function App() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isVideo, setIsVideo] = useState(false);
   const [videoFrames, setVideoFrames] = useState<string[]>([]);
+  
+  // Analysis Config State
+  const [selectedInfraction, setSelectedInfraction] = useState<InfractionType>('GENERAL');
   
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isExtractingFrames, setIsExtractingFrames] = useState(false);
@@ -165,10 +210,18 @@ function App() {
 
       if (selectedFile) {
         if (isVideo) {
-          result = await analyzeFootballPlay({ type: 'frames', frames: videoFrames });
+          result = await analyzeFootballPlay({ 
+            type: 'frames', 
+            frames: videoFrames,
+            infractionContext: selectedInfraction 
+          });
         } else {
           const base64 = await fileToBase64(selectedFile);
-          result = await analyzeFootballPlay({ type: 'image', base64 });
+          result = await analyzeFootballPlay({ 
+            type: 'image', 
+            base64,
+            infractionContext: selectedInfraction
+          });
         }
         setAnalysisResult(result);
         setStep(AppStep.RESULT);
@@ -189,15 +242,25 @@ function App() {
     setAnalysisResult(null);
     setVideoFrames([]);
     setIsVideo(false);
+    setSelectedInfraction('GENERAL');
     setError(null);
     setShowPaymentForm(false);
   };
 
+  const infractionOptions: { id: InfractionType; label: string; icon: React.ReactNode }[] = [
+    { id: 'GENERAL', label: 'Análise Geral', icon: <IconWhistle className="w-5 h-5" /> },
+    { id: 'OFFSIDE', label: 'Impedimento', icon: <IconFlag className="w-5 h-5" /> },
+    { id: 'PENALTY', label: 'Pênalti', icon: <IconTacticBoard className="w-5 h-5" /> },
+    { id: 'HANDBALL', label: 'Mão na Bola', icon: <IconHand className="w-5 h-5" /> },
+    { id: 'RED_CARD', label: 'Expulsão', icon: <IconAlertTriangle className="w-5 h-5" /> },
+    { id: 'GOAL_CHECK', label: 'Foi Gol?', icon: <IconCheckCircle className="w-5 h-5" /> },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-field-dark/20 text-slate-50 font-sans selection:bg-field selection:text-white pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-field-dark/20 text-slate-50 font-sans selection:bg-field selection:text-white pb-20 relative overflow-hidden">
       
       {/* Header */}
-      <header className="p-6 flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50">
+      <header className="p-6 flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50 relative">
         <div className="flex items-center gap-2 cursor-pointer" onClick={resetApp}>
           <div className="bg-field p-1.5 rounded text-slate-950">
              <IconWhistle className="w-6 h-6" />
@@ -212,30 +275,85 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 mt-12 flex flex-col items-center justify-center min-h-[70vh]">
+      <main className="container mx-auto px-4 mt-12 flex flex-col items-center justify-center min-h-[70vh] relative z-10">
         
         {/* Landing Step */}
         {step === AppStep.LANDING && (
-          <div className="text-center max-w-2xl space-y-8 animate-fade-in-up">
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight text-white mt-8">
-              Tire a teima.<br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-field to-teal-400">
-                Arbitragem com IA.
-              </span>
-            </h1>
-            <p className="text-xl text-slate-400 leading-relaxed max-w-lg mx-auto">
-              Analise jogadas duvidosas com precisão profissional.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-              <button 
-                onClick={handleStart}
-                className="px-8 py-4 bg-field hover:bg-field-light text-slate-950 font-bold rounded-xl text-lg transition-all transform hover:scale-105 shadow-lg shadow-field/20"
-              >
-                Analisar Jogada
-              </button>
-              <div className="px-8 py-4 glass-panel rounded-xl text-slate-300 font-medium border border-white/10 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                R$ 10,00 / análise
+          <div className="w-full max-w-5xl">
+            {/* Hero Section */}
+            <TacticalBackground />
+            
+            <div className="text-center max-w-2xl mx-auto space-y-8 animate-fade-in-up relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-field/10 border border-field/20 text-field text-xs font-semibold uppercase tracking-wide">
+                <span className="w-2 h-2 rounded-full bg-field animate-pulse"></span>
+                IA Generativa de Futebol
+              </div>
+              
+              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight text-white mt-8">
+                Tire a teima.<br/>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-field to-teal-400">
+                  Arbitragem com IA.
+                </span>
+              </h1>
+              <p className="text-xl text-slate-400 leading-relaxed max-w-lg mx-auto">
+                Envie o vídeo do lance polêmico e receba um veredito técnico baseado nas regras oficiais da IFAB.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8 pb-16">
+                <button 
+                  onClick={handleStart}
+                  className="px-8 py-4 bg-field hover:bg-field-light text-slate-950 font-bold rounded-xl text-lg transition-all transform hover:scale-105 shadow-lg shadow-field/20 flex items-center justify-center gap-2"
+                >
+                  <IconWhistle className="w-5 h-5" />
+                  Analisar Jogada
+                </button>
+                <div className="px-8 py-4 glass-panel rounded-xl text-slate-300 font-medium border border-white/10 flex items-center justify-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                  R$ 10,00 / análise
+                </div>
+              </div>
+            </div>
+
+            {/* How it Works Section */}
+            <div className="mt-12 pt-12 border-t border-white/5 relative z-10">
+              <h3 className="text-center text-2xl font-bold text-white mb-12">Como Funciona o VAR Digital</h3>
+              
+              <div className="grid md:grid-cols-3 gap-8">
+                {/* Step 1 */}
+                <div className="glass-panel p-6 rounded-2xl border border-white/5 relative group hover:border-field/30 transition-colors">
+                  <div className="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center mb-4 text-field group-hover:scale-110 transition-transform">
+                    <IconUpload className="w-7 h-7" />
+                  </div>
+                  <h4 className="text-xl font-bold text-white mb-2">1. Envie o Lance</h4>
+                  <p className="text-slate-400 leading-relaxed">
+                    Faça o upload do vídeo ou foto do momento polêmico. Aceitamos lances de qualquer ângulo.
+                  </p>
+                  <div className="absolute top-6 right-6 text-slate-700 font-extrabold text-4xl opacity-20">01</div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="glass-panel p-6 rounded-2xl border border-white/5 relative group hover:border-field/30 transition-colors">
+                  <div className="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center mb-4 text-teal-400 group-hover:scale-110 transition-transform">
+                    <IconRobotEye className="w-7 h-7" />
+                  </div>
+                  <h4 className="text-xl font-bold text-white mb-2">2. Análise Visual</h4>
+                  <p className="text-slate-400 leading-relaxed">
+                    Nossa IA analisa quadro a quadro, verificando impedimentos, toques de mão e intensidade de faltas.
+                  </p>
+                  <div className="absolute top-6 right-6 text-slate-700 font-extrabold text-4xl opacity-20">02</div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="glass-panel p-6 rounded-2xl border border-white/5 relative group hover:border-field/30 transition-colors">
+                  <div className="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center mb-4 text-green-400 group-hover:scale-110 transition-transform">
+                    <IconTacticBoard className="w-7 h-7" />
+                  </div>
+                  <h4 className="text-xl font-bold text-white mb-2">3. Veredito Técnico</h4>
+                  <p className="text-slate-400 leading-relaxed">
+                    Receba o resultado final com citação da regra da FIFA/IFAB e explicação detalhada do lance.
+                  </p>
+                  <div className="absolute top-6 right-6 text-slate-700 font-extrabold text-4xl opacity-20">03</div>
+                </div>
               </div>
             </div>
           </div>
@@ -243,7 +361,7 @@ function App() {
 
         {/* Upload/Input Step */}
         {step === AppStep.UPLOAD && (
-          <div className="w-full max-w-xl space-y-6 animate-fade-in-up">
+          <div className="w-full max-w-xl space-y-6 animate-fade-in-up relative z-10">
              <div className="text-center">
               <h2 className="text-3xl font-bold mb-2">Envie o Lance</h2>
               <p className="text-slate-400">Faça o upload do vídeo ou foto para análise visual.</p>
@@ -309,6 +427,37 @@ function App() {
               </div>
             )}
 
+            {/* Infraction Selection Grid - Only Show if File is Selected */}
+            {(selectedFile && !isExtractingFrames) && (
+              <div className="space-y-4 animate-fade-in-up">
+                <div className="flex items-center gap-2 mb-2">
+                   <div className="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-field">
+                      <IconTacticBoard className="w-5 h-5" />
+                   </div>
+                   <h3 className="font-semibold text-white">O que devemos checar?</h3>
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {infractionOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => setSelectedInfraction(option.id)}
+                      className={`
+                        p-3 rounded-xl border flex flex-col items-center gap-2 transition-all
+                        ${selectedInfraction === option.id 
+                          ? 'bg-field text-slate-950 border-field shadow-lg shadow-field/20' 
+                          : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'
+                        }
+                      `}
+                    >
+                      {option.icon}
+                      <span className="text-sm font-medium">{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
              {/* Privacy Note */}
              <div className="flex items-center justify-center gap-2 pt-2 text-xs text-slate-500 opacity-75">
                 <IconShield className="w-3 h-3 text-field" />
@@ -332,7 +481,7 @@ function App() {
 
         {/* Payment Step */}
         {step === AppStep.PAYMENT && (
-          <div className="w-full max-w-md animate-fade-in-up">
+          <div className="w-full max-w-md animate-fade-in-up relative z-10">
             <div className="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-field to-transparent"></div>
               
@@ -350,8 +499,10 @@ function App() {
                   <span className="font-mono font-bold text-white">R$ 10,00</span>
                 </div>
                 <div className="flex justify-between items-center px-4 text-sm text-slate-500">
-                  <span>Taxas</span>
-                  <span>R$ 0,00</span>
+                  <span>Tipo de Análise</span>
+                  <span className="font-medium text-white">
+                      {infractionOptions.find(o => o.id === selectedInfraction)?.label}
+                  </span>
                 </div>
                 <div className="border-t border-white/10 my-4"></div>
                 <div className="flex justify-between items-center px-4 text-lg font-bold text-white">
@@ -380,7 +531,7 @@ function App() {
               )}
             </div>
             
-             {!(import.meta as any).env.VITE_STRIPE_PUBLISHABLE_KEY && showPaymentForm && (
+             {!process.env.VITE_STRIPE_PUBLISHABLE_KEY && showPaymentForm && (
                 <p className="text-center text-xs text-red-500 mt-6 bg-red-900/20 p-2 rounded">
                    ⚠️ Configure VITE_STRIPE_PUBLISHABLE_KEY no arquivo .env
                 </p>
@@ -395,7 +546,7 @@ function App() {
 
         {/* Analyzing Step */}
         {step === AppStep.ANALYZING && (
-          <div className="text-center space-y-8 animate-pulse">
+          <div className="text-center space-y-8 animate-pulse relative z-10">
             <div className="relative w-32 h-32 mx-auto">
                <div className="absolute inset-0 border-4 border-field/20 rounded-full"></div>
                <div className="absolute inset-0 border-4 border-field rounded-full border-t-transparent animate-spin"></div>
@@ -405,7 +556,10 @@ function App() {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">Consultando o VAR...</h2>
-              <p className="text-slate-400">
+              <p className="text-slate-400 mb-2">
+                 Verificando: <span className="text-field font-bold">{infractionOptions.find(o => o.id === selectedInfraction)?.label}</span>
+              </p>
+              <p className="text-slate-500 text-sm">
                 {isVideo 
                   ? 'Analisando a sequência de quadros do vídeo...' 
                   : 'Nossa IA está analisando cada detalhe e regra.'}
@@ -422,7 +576,7 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 w-full p-4 border-t border-white/5 bg-slate-950/80 backdrop-blur-md text-center text-xs text-slate-600">
+      <footer className="w-full p-4 border-t border-white/5 bg-slate-950/80 backdrop-blur-md text-center text-xs text-slate-600 relative z-20">
         &copy; CheckLance Micro SaaS. Não afiliado à FIFA. Uso para fins de entretenimento e análise amadora.
       </footer>
     </div>

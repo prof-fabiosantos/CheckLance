@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { AnalysisResult } from "../types";
+import { AnalysisResult, InfractionType } from "../types";
 
 // Initialize the Gemini client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -34,8 +34,8 @@ const analysisSchema: Schema = {
 };
 
 export type AnalysisInput = 
-  | { type: 'image'; base64: string }
-  | { type: 'frames'; frames: string[] };
+  | { type: 'image'; base64: string; infractionContext: InfractionType }
+  | { type: 'frames'; frames: string[]; infractionContext: InfractionType };
 
 export const analyzeFootballPlay = async (input: AnalysisInput): Promise<AnalysisResult> => {
   try {
@@ -52,7 +52,7 @@ export const analyzeFootballPlay = async (input: AnalysisInput): Promise<Analysi
         contents: {
           parts: [
             { inlineData: { mimeType: 'image/jpeg', data: input.base64 } },
-            { text: getSystemPrompt('image') },
+            { text: getSystemPrompt('image', input.infractionContext) },
           ],
         },
         config: getModelConfig(),
@@ -64,7 +64,7 @@ export const analyzeFootballPlay = async (input: AnalysisInput): Promise<Analysi
       }));
       
       parts.push({ 
-        text: getSystemPrompt('video_frames') 
+        text: getSystemPrompt('video_frames', input.infractionContext) 
       } as any);
 
       response = await ai.models.generateContent({
@@ -87,21 +87,43 @@ export const analyzeFootballPlay = async (input: AnalysisInput): Promise<Analysi
   }
 };
 
-function getSystemPrompt(type: 'image' | 'video_frames') {
+function getSystemPrompt(type: 'image' | 'video_frames', context: InfractionType) {
+  let specificInstruction = "";
+
+  switch (context) {
+    case 'OFFSIDE':
+      specificInstruction = "FOCO TOTAL NO IMPEDIMENTO (OFFSIDE). Analise a posição do atacante em relação ao penúltimo defensor e a bola no exato momento do passe. Identifique linhas virtuais.";
+      break;
+    case 'PENALTY':
+      specificInstruction = "FOCO TOTAL EM PÊNALTI. Verifique se o contato ocorreu DENTRO da área. Analise se houve contato físico imprudente, bloqueio ou toque de mão.";
+      break;
+    case 'HANDBALL':
+      specificInstruction = "FOCO TOTAL EM TOQUE DE MÃO (HANDBALL). Analise a posição natural/antinatural do braço/mão e se houve intenção ou ampliação do volume corporal.";
+      break;
+    case 'RED_CARD':
+      specificInstruction = "FOCO TOTAL EM CARTÃO VERMELHO. Analise força excessiva, brutalidade, pitões na canela ou agressão. Verifique se houve chance clara de gol impedida.";
+      break;
+    case 'GOAL_CHECK':
+      specificInstruction = "FOCO TOTAL SE A BOLA ENTROU (GOAL CHECK). Verifique se a circunferência da bola cruzou totalmente a linha do gol.";
+      break;
+    default:
+      specificInstruction = "Faça uma análise geral. Busque por qualquer infração óbvia seguindo as regras da IFAB.";
+      break;
+  }
+
   const base = `Você é um árbitro assistente de vídeo (VAR) sênior.
+  ${specificInstruction}
   Analise o conteúdo visual fornecido com extrema precisão técnica seguindo as regras da IFAB.`;
 
   if (type === 'video_frames') {
     return `${base}
     Estas são imagens sequenciais (frames) extraídas de um vídeo do lance.
     Analise a dinâmica do movimento, contato físico, intensidade e intenção através da sequência.
-    Identifique infrações, impedimentos ou simulações.
     Responda APENAS o JSON solicitado.`;
   }
 
   return `${base}
   Analise esta imagem estática do lance.
-  Identifique infrações visíveis, impedimentos (linhas virtuais) ou contatos faltosos.
   Responda APENAS o JSON solicitado.`;
 }
 

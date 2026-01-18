@@ -10,8 +10,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // Polyfill process.env.API_KEY for the Gemini SDK in the browser
+      // Polyfill process.env.API_KEY and Stripe Key for browser usage
       'process.env.API_KEY': JSON.stringify(env.API_KEY),
+      'process.env.VITE_STRIPE_PUBLISHABLE_KEY': JSON.stringify(env.VITE_STRIPE_PUBLISHABLE_KEY),
     },
     server: {
       // Proxy API requests during local development if needed
