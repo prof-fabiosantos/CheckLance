@@ -38,20 +38,21 @@ export const createStripePaymentIntent = async (amount: number): Promise<StripeP
         body: JSON.stringify({ amount }),
       });
       
+      const data = await response.json();
+
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Failed to connect to Vercel API');
+        // Throw the specific error message returned by the server
+        throw new Error(data.error || `Erro HTTP: ${response.status}`);
       }
-      return await response.json();
-    } catch (error) {
+      return data;
+    } catch (error: any) {
       console.error("Backend Error:", error);
-      // Fallback for demo purposes if backend fails (e.g., missing API keys)
-      alert("Erro ao conectar com a Stripe. Verifique as variáveis de ambiente na Vercel (STRIPE_SECRET_KEY).");
+      // Show the actual error message to help debugging
+      alert(`Falha no pagamento: ${error.message}`);
       throw error;
     }
   }
 
-  // --- MOCK IMPLEMENTATION REMOVED FOR VERCEL DEPLOYMENT FOCUS ---
   throw new Error("Mock disabled. Please configure Vercel Environment Variables.");
 };
 
