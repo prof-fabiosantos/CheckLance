@@ -1,0 +1,5 @@
+{
+  "name": "CheckLance",
+  "description": "Seu assistente de arbitragem pessoal. Analise lances polêmicos com IA baseada nas regras oficiais da IFAB.",
+  "requestFramePermissions": []
+}
