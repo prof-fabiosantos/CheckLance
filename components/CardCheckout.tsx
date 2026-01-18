@@ -56,7 +56,8 @@ export const CardCheckout: React.FC<Props> = ({ onPaymentApproved, onCancel }) =
   };
 
   const cardStyle = {
-    hidePostalCode: true, // Remove o campo de CEP/Postal Code
+    hidePostalCode: true, // Remove campo de CEP
+    disableLink: true,    // Remove a opção "Salvar com Link"
     style: {
       base: {
         color: "#ffffff",

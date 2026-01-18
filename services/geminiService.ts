@@ -41,8 +41,10 @@ export const analyzeFootballPlay = async (input: AnalysisInput): Promise<Analysi
   try {
     let response;
 
-    // We upgrade to gemini-3-pro-preview for all tasks to ensure maximum precision and reasoning capabilities.
-    const modelName = 'gemini-3-pro-preview';
+    // Alterado de 'gemini-3-pro-preview' para 'gemini-2.5-flash'.
+    // O modelo Flash é muito mais rápido, tem menor custo e limites de cota muito mais generosos,
+    // sendo ideal para análise de frames de vídeo e imagens em aplicações de alto volume.
+    const modelName = 'gemini-2.5-flash';
 
     if (input.type === 'image') {
       response = await ai.models.generateContent({
