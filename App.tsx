@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { IconUpload, IconWhistle, IconCreditCard, IconLoader, IconShield, IconLock, IconRobotEye, IconTacticBoard, IconCheckCircle, IconFlag, IconHand, IconAlertTriangle } from './components/Icons';
+import { IconUpload, IconWhistle, IconCreditCard, IconLoader, IconShield, IconLock, IconRobotEye, IconTacticBoard, IconCheckCircle, IconFlag, IconHand, IconAlertTriangle, IconFlame, IconHeartPulse } from './components/Icons';
 import { analyzeFootballPlay } from './services/geminiService';
 import { AnalysisResult, AppStep, InfractionType } from './types';
 import { AnalysisCard } from './components/AnalysisCard';
@@ -356,6 +356,70 @@ function App() {
                 </div>
               </div>
             </div>
+
+             {/* Emotional Appeal Section */}
+             <div className="mt-16 relative z-10">
+                <div className="rounded-3xl bg-gradient-to-r from-red-900/40 to-slate-900/80 border border-white/10 p-8 md:p-12 flex flex-col md:flex-row items-center gap-12 overflow-hidden shadow-2xl">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 blur-[100px] rounded-full pointer-events-none"></div>
+                    
+                    <div className="flex-1 space-y-6">
+                        <div className="inline-flex items-center gap-2 text-red-400 font-semibold uppercase tracking-wider text-sm">
+                            <IconFlame className="w-4 h-4 animate-pulse" />
+                            A Polêmica Acaba Aqui
+                        </div>
+                        <h2 className="text-3xl md:text-5xl font-bold text-white leading-tight">
+                            Quantas vezes o grupo da família virou campo de guerra?
+                        </h2>
+                        <p className="text-lg text-slate-300 leading-relaxed">
+                           Aquele pênalti mandraque aos 45 do segundo tempo... Foi roubo ou choro? 
+                           Seu coração diz uma coisa, o narrador diz outra. A dúvida corrói, a discussão no bar esquenta e a amizade balança.
+                           <br/><br/>
+                           <span className="text-white font-semibold">Não deixe o 'clubismo' cegar a verdade.</span> O CheckLance é o juiz imparcial que falta na sua resenha.
+                        </p>
+                        <button 
+                            onClick={handleStart}
+                            className="mt-4 px-8 py-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold transition-all transform hover:translate-y-[-2px] shadow-lg shadow-red-900/30 flex items-center gap-2"
+                        >
+                            <IconHeartPulse className="w-5 h-5" />
+                            Resolver a Discussão
+                        </button>
+                    </div>
+
+                    <div className="flex-1 relative">
+                        {/* Simulation of a chat/message interface */}
+                        <div className="glass-panel p-6 rounded-2xl border-white/10 transform rotate-2 max-w-sm mx-auto opacity-90 hover:opacity-100 transition-opacity">
+                            <div className="space-y-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold">R</div>
+                                    <div className="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-slate-300">
+                                        Isso foi roubado demais! O cara se jogou! 🤡
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 flex-row-reverse">
+                                    <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-xs font-bold">V</div>
+                                    <div className="bg-field/20 p-3 rounded-2xl rounded-tr-none text-sm text-white">
+                                        Pera aí... passei no CheckLance.
+                                    </div>
+                                </div>
+                                <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-xs font-mono text-field">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <IconCheckCircle className="w-3 h-3" />
+                                        <span>ANÁLISE CONFIRMADA</span>
+                                    </div>
+                                    Verdito: SIMULAÇÃO. Contato insuficiente para penalidade.
+                                </div>
+                                 <div className="flex items-start gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold">R</div>
+                                    <div className="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-slate-300">
+                                        🤐 ...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+             </div>
+
           </div>
         )}
 
