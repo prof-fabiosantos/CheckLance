@@ -1,9 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { IconUpload, IconWhistle, IconCreditCard, IconLoader, IconShield, IconLock } from './components/Icons';
 import { analyzeFootballPlay } from './services/geminiService';
 import { AnalysisResult, AppStep } from './types';
 import { AnalysisCard } from './components/AnalysisCard';
-import { PixCheckout } from './components/PixCheckout';
+import { CardCheckout } from './components/CardCheckout';
+
+// Stripe Imports
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+
+// Initialize Stripe outside component render
+// NOTE: You must add VITE_STRIPE_PUBLISHABLE_KEY to your .env file
+const stripePromise = loadStripe((import.meta as any).env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder_please_update_env');
 
 // Helper to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -42,20 +50,16 @@ const extractFramesFromVideo = async (videoFile: File, numFrames: number = 8): P
   await new Promise(r => setTimeout(r, 200));
 
   const duration = video.duration;
-  // Limit duration check to avoid processing hour-long videos
-  if (duration > 600) { 
-      // Just take from first minute if too long, or handle error
-  }
+  // Limit duration check
+  if (duration > 600) { }
 
   for (let i = 0; i < numFrames; i++) {
-    // Distribute frames evenly, but avoid the very start/end if possible to catch action
     const time = Math.min((duration / numFrames) * i + 0.1, duration);
     video.currentTime = time;
     await new Promise(r => {
         video.onseeked = () => r(true);
     });
     
-    // Resize to reasonable dimensions for API (e.g. max 640px height) to save tokens
     const scale = Math.min(1, 640 / video.videoHeight);
     canvas.width = video.videoWidth * scale;
     canvas.height = video.videoHeight * scale;
@@ -82,7 +86,7 @@ function App() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isExtractingFrames, setIsExtractingFrames] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPix, setShowPix] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleStart = () => {
@@ -146,7 +150,7 @@ function App() {
   const proceedToPayment = () => {
     if (selectedFile && !isExtractingFrames) {
       setStep(AppStep.PAYMENT);
-      setShowPix(false);
+      setShowPaymentForm(false);
     }
   };
 
@@ -186,7 +190,7 @@ function App() {
     setVideoFrames([]);
     setIsVideo(false);
     setError(null);
-    setShowPix(false);
+    setShowPaymentForm(false);
   };
 
   return (
@@ -356,26 +360,34 @@ function App() {
                 </div>
               </div>
 
-              {!showPix ? (
+              {!showPaymentForm ? (
                 <>
                   <button 
-                    onClick={() => setShowPix(true)}
+                    onClick={() => setShowPaymentForm(true)}
                     className="w-full py-4 bg-field hover:bg-field-light text-slate-950 font-bold rounded-xl text-lg transition-all shadow-lg flex items-center justify-center gap-2"
                   >
-                     Pagar com PIX
+                     Pagar com Cartão
                   </button>
                   <button onClick={() => setStep(AppStep.UPLOAD)} className="w-full mt-4 text-slate-500 hover:text-white text-sm">Voltar</button>
                 </>
               ) : (
-                <PixCheckout 
-                    onPaymentApproved={handlePaymentApproved} 
-                    onCancel={() => setShowPix(false)}
-                />
+                <Elements stripe={stripePromise} options={{ appearance: { theme: 'night' } }}>
+                   <CardCheckout 
+                      onPaymentApproved={handlePaymentApproved} 
+                      onCancel={() => setShowPaymentForm(false)}
+                  />
+                </Elements>
               )}
             </div>
             
+             {!(import.meta as any).env.VITE_STRIPE_PUBLISHABLE_KEY && showPaymentForm && (
+                <p className="text-center text-xs text-red-500 mt-6 bg-red-900/20 p-2 rounded">
+                   ⚠️ Configure VITE_STRIPE_PUBLISHABLE_KEY no arquivo .env
+                </p>
+             )}
+            
             <p className="text-center text-xs text-slate-600 mt-6">
-              Pagamento processado via ambiente seguro (Simulação).<br/>
+              Pagamento processado via ambiente seguro Stripe.<br/>
               Garantia de satisfação ou nova análise grátis.
             </p>
           </div>

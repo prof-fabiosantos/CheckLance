@@ -14,7 +14,9 @@
     "@google/genai": "latest",
     "stripe": "^14.14.0",
     "qrcode": "^1.5.3",
-    "lucide-react": "^0.309.0"
+    "lucide-react": "^0.309.0",
+    "@stripe/stripe-js": "^2.4.0",
+    "@stripe/react-stripe-js": "^2.4.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

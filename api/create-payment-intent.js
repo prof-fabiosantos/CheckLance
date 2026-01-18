@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 
 export default async function handler(req, res) {
-  // Configurar CORS para permitir chamadas do frontend
+  // Configurar CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -20,9 +20,9 @@ export default async function handler(req, res) {
   }
 
   if (!process.env.STRIPE_SECRET_KEY) {
-    console.error("ERRO CRÍTICO: STRIPE_SECRET_KEY não encontrada nas variáveis de ambiente.");
+    console.error("ERRO CRÍTICO: STRIPE_SECRET_KEY não encontrada.");
     return res.status(500).json({ 
-      error: 'Configuração do Servidor Incompleta: STRIPE_SECRET_KEY não encontrada. Verifique o painel da Vercel.' 
+      error: 'Configuração do Servidor Incompleta: STRIPE_SECRET_KEY não encontrada.' 
     });
   }
 
@@ -30,11 +30,12 @@ export default async function handler(req, res) {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     const { amount } = req.body;
 
-    // Create the PaymentIntent
+    // Criar PaymentIntent para CARTÃO
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents (R$ 10.00 -> 1000)
+      amount: Math.round(amount * 100),
       currency: 'brl',
-      payment_method_types: ['pix'],
+      // 'card' geralmente vem habilitado por padrão em contas de teste
+      payment_method_types: ['card'], 
       metadata: {
         service: 'CheckLance Analysis'
       }
@@ -43,9 +44,8 @@ export default async function handler(req, res) {
     res.status(200).json({
       id: paymentIntent.id,
       client_secret: paymentIntent.client_secret,
-      status: paymentIntent.status,
-      next_action: paymentIntent.next_action
     });
+
   } catch (error) {
     console.error('Stripe Error:', error);
     res.status(500).json({ error: `Erro na Stripe: ${error.message}` });
