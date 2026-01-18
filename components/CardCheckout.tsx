@@ -56,6 +56,7 @@ export const CardCheckout: React.FC<Props> = ({ onPaymentApproved, onCancel }) =
   };
 
   const cardStyle = {
+    hidePostalCode: true, // Remove o campo de CEP/Postal Code
     style: {
       base: {
         color: "#ffffff",
