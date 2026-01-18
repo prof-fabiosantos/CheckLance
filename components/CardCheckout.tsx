@@ -28,7 +28,7 @@ export const CardCheckout: React.FC<Props> = ({ onPaymentApproved, onCancel }) =
 
     try {
       // 1. Create Payment Intent on Backend
-      const { client_secret } = await createStripePaymentIntent(10.00);
+      const { client_secret } = await createStripePaymentIntent(20.00);
 
       // 2. Confirm Card Payment on Frontend
       const result = await stripe.confirmCardPayment(client_secret, {
@@ -109,7 +109,7 @@ export const CardCheckout: React.FC<Props> = ({ onPaymentApproved, onCancel }) =
         ) : (
           <>
             <IconCreditCard className="w-5 h-5" />
-            Pagar R$ 10,00
+            Pagar R$ 20,00
           </>
         )}
       </button>

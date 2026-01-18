@@ -309,7 +309,7 @@ function App() {
                 </button>
                 <div className="px-8 py-4 glass-panel rounded-xl text-slate-300 font-medium border border-white/10 flex items-center justify-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                  R$ 10,00 / análise
+                  R$ 20,00 / análise
                 </div>
               </div>
             </div>
@@ -535,7 +535,7 @@ function App() {
                 onClick={proceedToPayment}
                 className="w-full py-4 bg-field hover:bg-field-light text-slate-950 font-bold rounded-xl text-lg transition-all shadow-lg mt-4"
               >
-                Continuar para Pagamento (R$ 10,00)
+                Continuar para Pagamento (R$ 20,00)
               </button>
             )}
 
@@ -560,7 +560,7 @@ function App() {
               <div className="space-y-4 mb-8">
                 <div className="flex justify-between items-center p-4 bg-slate-900/50 rounded-lg border border-white/5">
                   <span className="text-slate-300">Análise Premium CheckLance</span>
-                  <span className="font-mono font-bold text-white">R$ 10,00</span>
+                  <span className="font-mono font-bold text-white">R$ 20,00</span>
                 </div>
                 <div className="flex justify-between items-center px-4 text-sm text-slate-500">
                   <span>Tipo de Análise</span>
@@ -571,7 +571,7 @@ function App() {
                 <div className="border-t border-white/10 my-4"></div>
                 <div className="flex justify-between items-center px-4 text-lg font-bold text-white">
                   <span>Total</span>
-                  <span>R$ 10,00</span>
+                  <span>R$ 20,00</span>
                 </div>
               </div>
 

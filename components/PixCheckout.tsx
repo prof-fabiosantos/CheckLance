@@ -19,7 +19,7 @@ export const PixCheckout: React.FC<Props> = ({ onPaymentApproved, onCancel }) =>
   useEffect(() => {
     const init = async () => {
       try {
-        const intent = await createStripePaymentIntent(10.00);
+        const intent = await createStripePaymentIntent(20.00);
         setPaymentIntent(intent);
         setStatus(intent.status);
         
